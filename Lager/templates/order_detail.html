@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+   <h1>Bestellung #{{ order.id }}</h1>
+    <p>Kunde: {{ order.customer_name }}</p>
+    <p>Datum: {{ order.order_date|date:"d.m.Y H:i" }}</p>
+    <p>Status: {{ order.get_status_display }}</p>
+    <h3>Positionen:</h3>
+    <ul>
+    {% for item in order.orderitem_set.all %}
+        <li style="{% if item.weight_kg > item.product_type.current_stock_kg %}color: red;{% endif %}">
+            {{ item.product_type }} - {{ item.weight_kg }} kg
+            ({{ item.total_price|floatformat:2 }} €)
+            <br>
+            <!-- Verfügbar: {{ item.product_type.current_stock_kg|floatformat:2 }} kg -->
+        </li>
+    {% endfor %}
+    </ul>
+    <p>Gesamtpreis: {{ order.total_price|floatformat:2 }} €</p>
+</body>
+</html>

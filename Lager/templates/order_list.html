@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+    <h1>Offene Bestellungen</h1>
+    <ul>
+    {% for order in orders %}
+        <li style="margin-bottom: 15px; {% if order.stock_status == '⚠️ Nicht genug Lagerbestand' %}color: red;{% endif %}">
+            <a href="{% url 'order_detail' order.id %}">
+                Bestellung #{{ order.id }} - {{ order.customer_name }}
+            </a>
+            ({{ order.order_date|date:"d.m.Y H:i" }})
+        </li>
+    {% endfor %}
+    </ul>
+</body>
+</html>
