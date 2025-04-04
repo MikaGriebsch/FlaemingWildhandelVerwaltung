@@ -8,6 +8,7 @@ def order_list(request):
 def old_order_list(request):
     orders = Order.objects.filter(status='completed').order_by('-order_date')
     return render(request, 'old_order_list.html', {'orders': orders})
+
 def order_detail(request, order_id):
     order = get_object_or_404(Order, pk=order_id)
     return render(request, 'order_detail.html', {'order': order})
