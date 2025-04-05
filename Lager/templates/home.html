@@ -3,10 +3,10 @@
 {% block title %}Dashboard - Fläming Wildhandel{% endblock %}
 
 {% block content %}
-    
     <div style="display: flex; justify-content: space-around; margin-top: 30px;">
         <div style="text-align: center; padding: 20px; background-color: #f8f9fa; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 40%;">
             <h2>Offene Bestellungen</h2>
+            <br>
             <div style="font-size: 48px; font-weight: bold; color: var(--accent);">
                 {{ open_orders_count }}
             </div>
@@ -19,6 +19,7 @@
         
         <div style="text-align: center; padding: 20px; background-color: #f8f9fa; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 40%;">
             <h2>Heute abgeschlossen</h2>
+            <br>
             <div style="font-size: 48px; font-weight: bold; color: var(--accent);">
                 {{ completed_today_count }}
             </div>
@@ -29,4 +30,37 @@
             </p>
         </div>
     </div>
+    
+    <!-- Kalender-Container -->
+    <div style="margin-top: 40px; padding: 20px; background-color: #f8f9fa; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+        <h2>Bestellungskalender</h2>
+        <div class="calender" id="calendar"></div>
+    </div>
+    
+    <!-- FullCalendar-Bibliotheken einbinden -->
+    <link href='https://cdn.jsdelivr.net/npm/fullcalendar@5.10.1/main.min.css' rel='stylesheet' />
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@5.10.1/main.min.js'></script>
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@5.10.1/locales/de.js'></script>
+    
+    <!-- Kalender initialisieren -->
+    <script>
+      document.addEventListener('DOMContentLoaded', function() {
+        var calendarEl = document.getElementById('calendar');
+        var calendar = new FullCalendar.Calendar(calendarEl, {
+          initialView: 'dayGridMonth',
+          locale: 'de',
+          headerToolbar: {
+            left: 'prev,next today',
+            center: 'title',
+            right: 'dayGridMonth,timeGridWeek,listWeek'
+          },
+          events: {{ calendar_events|safe }}, // Von Django übergebene Events
+          eventClick: function(info) {
+            // Zur Bestellungsdetailseite navigieren
+            window.location.href = '/lager/orders/' + info.event.id + '/';
+          }
+        });
+        calendar.render();
+      });
+    </script>
 {% endblock %}

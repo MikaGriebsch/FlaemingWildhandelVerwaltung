@@ -224,3 +224,16 @@ hr {
 .read-more:hover {
     color: var(--white); /* Farbe des Textes beim Hover */
 }
+
+.calender {
+	button {
+		background-color: var(--accent) !important;
+		border-color: var(--accent) !important;
+	}
+	.fc-daygrid-day-number {
+		color: var(--black) !important;
+	}
+	.fc-event-time {
+		display: none;
+	}
+}

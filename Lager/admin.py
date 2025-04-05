@@ -20,9 +20,11 @@ class ProductTypeAdmin(admin.ModelAdmin):
 
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
-    list_display = ('id', 'customer_name', 'order_date', 'status', 'stock_status')
+    list_display = ('id', 'customer_name', 'order_date', 'delivery_date', 'status', 'stock_status')
+    list_filter = ('status',)
     inlines = [OrderItemInline]
     actions = ['complete_orders', 'delete_selected']
+    fields = ('customer_name', 'delivery_date', 'status')
 
     def delete_model(self, request, obj):
         obj.delete()

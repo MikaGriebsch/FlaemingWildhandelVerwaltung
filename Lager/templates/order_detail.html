@@ -5,7 +5,8 @@
 {% block content %}
     <h1>Bestellung #{{ order.id }}</h1>
     <p>Kunde: {{ order.customer_name }}</p>
-    <p>Datum: {{ order.order_date|date:"d.m.Y H:i" }}</p>
+    <p>Bestelldatum: {{ order.order_date|date:"d.m.Y H:i" }}</p>
+    <p>Liefertermin: {% if order.delivery_date %}{{ order.delivery_date|date:"d.m.Y" }}{% else %}Nicht festgelegt{% endif %}</p>
     <p>Status: {{ order.get_status_display }}</p>
     <h3>Positionen:</h3>
     <ul>

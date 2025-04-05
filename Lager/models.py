@@ -1,6 +1,7 @@
 from django.db import models
 from django.core.exceptions import ValidationError
 from django.db import transaction
+from django.utils import timezone
 
 class Category(models.Model):
     name = models.CharField(max_length=100)
@@ -37,6 +38,8 @@ class Order(models.Model):
     ]
     customer_name = models.CharField(max_length=100)
     order_date = models.DateTimeField(auto_now_add=True)
+    #delivery_date = models.DateTimeField(blank=True, null=True, verbose_name="Liefertermin")
+    delivery_date = models.DateField(blank=True, null=True, verbose_name="Liefertermin")
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending')
 
     def clean(self):
