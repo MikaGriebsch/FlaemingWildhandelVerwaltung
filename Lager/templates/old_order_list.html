@@ -1,11 +1,9 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Old Order</title>
-</head>
-<body>
-    <h1>Abgeschlossene Bestellungen</h1>
+{% extends "base.html" %}
+
+{% block title %}Abgeschlossene Bestellungen{% endblock %}
+
+{% block content %}
+<h1>Abgeschlossene Bestellungen</h1>
     <ul>
     {% for order in orders %}
         <li style="margin-bottom: 15px; {% if order.stock_status == '⚠️ Nicht genug Lagerbestand' %}color: red;{% endif %}">
@@ -16,5 +14,4 @@
         </li>
     {% endfor %}
     </ul>
-</body>
-</html>
+{% endblock %}

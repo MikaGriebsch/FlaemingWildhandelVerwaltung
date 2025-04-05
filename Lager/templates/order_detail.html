@@ -1,11 +1,9 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
-<body>
-   <h1>Bestellung #{{ order.id }}</h1>
+{% extends "base.html" %}
+
+{% block title %}Offene Bestellungen{% endblock %}
+
+{% block content %}
+    <h1>Bestellung #{{ order.id }}</h1>
     <p>Kunde: {{ order.customer_name }}</p>
     <p>Datum: {{ order.order_date|date:"d.m.Y H:i" }}</p>
     <p>Status: {{ order.get_status_display }}</p>
@@ -21,5 +19,4 @@
     {% endfor %}
     </ul>
     <p>Gesamtpreis: {{ order.total_price|floatformat:2 }} €</p>
-</body>
-</html>
+{% endblock %}

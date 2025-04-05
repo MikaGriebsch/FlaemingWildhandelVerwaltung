@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Fläming Wildhandel{% endblock %}
+
+{% block content %}
+    
+    <div style="display: flex; justify-content: space-around; margin-top: 30px;">
+        <div style="text-align: center; padding: 20px; background-color: #f8f9fa; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 40%;">
+            <h2>Offene Bestellungen</h2>
+            <div style="font-size: 48px; font-weight: bold; color: var(--accent);">
+                {{ open_orders_count }}
+            </div>
+            <p>
+                <a href="{% url 'order_list' %}" style="color: var(--accent); text-decoration: none;">
+                    Alle anzeigen →
+                </a>
+            </p>
+        </div>
+        
+        <div style="text-align: center; padding: 20px; background-color: #f8f9fa; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 40%;">
+            <h2>Heute abgeschlossen</h2>
+            <div style="font-size: 48px; font-weight: bold; color: var(--accent);">
+                {{ completed_today_count }}
+            </div>
+            <p>
+                <a href="{% url 'old_order_list' %}" style="color: var(--accent); text-decoration: none;">
+                    Alle anzeigen →
+                </a>
+            </p>
+        </div>
+    </div>
+{% endblock %}

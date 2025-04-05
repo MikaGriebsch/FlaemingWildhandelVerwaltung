@@ -1,0 +1,34 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Fläming Wildhandel{% endblock %}</title>
+    <link rel="stylesheet" type="text/css" href="{% static 'css/base.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'css/header.css' %}">
+</head>
+<body>
+
+<header>
+    <nav>
+        <img class="logo" src="{% static 'img/logo.png' %}" alt="Logo Fleaming Wildhandel">
+        <div class="internal-links">
+            <a href="/lager/home">Home</a>
+            <a href="/lager/orders/">Offene Bestellungen</a>
+            <a href="/lager/oldorders/">Abgeschlossene Bestellungen</a>
+        </div>
+
+        <div class="hamburger-icon">&#9776;</div> 
+        <img src="{% static 'images/logo.AVIF' %}" alt="Logo Mobile" class="logo-mobile">
+    </nav>
+</header>
+
+<!-- Hier wird der spezifische Inhalt jeder Seite eingefügt -->
+<main>
+    {% block content %}
+    {% endblock %}
+</main>
+
+</body>
+</html>
