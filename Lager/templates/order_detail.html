@@ -3,21 +3,386 @@
 {% block title %}Offene Bestellungen{% endblock %}
 
 {% block content %}
+    <!-- Font Awesome für Icons einbinden -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <h1>Bestellung #{{ order.id }}</h1>
-    <p>Kunde: {{ order.customer_name }}</p>
-    <p>Bestelldatum: {{ order.order_date|date:"d.m.Y H:i" }}</p>
-    <p>Liefertermin: {% if order.delivery_date %}{{ order.delivery_date|date:"d.m.Y" }}{% else %}Nicht festgelegt{% endif %}</p>
-    <p>Status: {{ order.get_status_display }}</p>
+    
+    <!-- Bearbeitung der Bestellungsinformationen -->
+    <div style="margin-bottom: 30px; padding: 20px; background-color: #f8f9fa; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+        <p>Kunde: {{ order.customer_name }}</p>
+        <p>Bestelldatum: {{ order.order_date|date:"d.m.Y H:i" }}</p>
+        
+        <!-- Liefertermin mit Bearbeitungsmöglichkeit -->
+        <div style="display: flex; align-items: center; margin-bottom: 10px;">
+            <span><strong>Liefertermin:</strong></span>
+            <span id="delivery-date-display" style="margin-left: 5px;">
+                {% if order.delivery_date %}{{ order.delivery_date|date:"d.m.Y" }}{% else %}Nicht festgelegt{% endif %}
+            </span>
+            <input type="date" id="delivery-date-edit" style="display: none; margin-left: 5px;">
+            <i class="fas fa-edit" id="edit-delivery-date-btn" 
+               onclick="toggleDeliveryDateEdit()" 
+               style="margin-left: 10px; cursor: pointer; color: #0275d8;"></i>
+            <i class="fas fa-check save-btn" id="save-delivery-date-btn"
+               onclick="saveDeliveryDate({{ order.id }})" 
+               style="display: none; margin-left: 10px; cursor: pointer; color: #28a745;"></i>
+        </div>
+        
+        <!-- Status mit Bearbeitungsmöglichkeit -->
+        <div style="display: flex; align-items: center;">
+            <span><strong>Status:</strong></span>
+            <span id="status-display" style="margin-left: 5px;">{{ order.get_status_display }}</span>
+            <select id="status-edit" style="display: none; margin-left: 5px;">
+                <option value="pending" {% if order.status == 'pending' %}selected{% endif %}>Ausstehend</option>
+                <option value="completed" {% if order.status == 'completed' %}selected{% endif %}>Abgeschlossen</option>
+            </select>
+            <i class="fas fa-edit" id="edit-status-btn" 
+               onclick="toggleStatusEdit()" 
+               style="margin-left: 10px; cursor: pointer; color: #0275d8;"></i>
+            <i class="fas fa-check save-btn" id="save-status-btn"
+               onclick="saveStatus({{ order.id }})" 
+               style="display: none; margin-left: 10px; cursor: pointer; color: #28a745;"></i>
+        </div>
+    </div>
+    
     <h3>Positionen:</h3>
-    <ul>
-    {% for item in order.orderitem_set.all %}
-        <li style="{% if item.weight_kg > item.product_type.current_stock_kg %}color: red;{% endif %}">
-            {{ item.product_type }} - {{ item.weight_kg }} kg
-            ({{ item.total_price|floatformat:2 }} €)
-            <br>
-            <!-- Verfügbar: {{ item.product_type.current_stock_kg|floatformat:2 }} kg -->
-        </li>
-    {% endfor %}
-    </ul>
-    <p>Gesamtpreis: {{ order.total_price|floatformat:2 }} €</p>
+    <form id="orderItemsForm" method="post"> <!-- Entfernung der action-URL -->
+        {% csrf_token %}
+        <table class="order-items-table" style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+            <thead>
+                <tr style="background-color: #f8f9fa; border-bottom: 2px solid #dee2e6;">
+                    <th style="padding: 10px; text-align: left;">Erledigt</th>
+                    <th style="padding: 10px; text-align: left;">Produkt</th>
+                    <th style="padding: 10px; text-align: right;">Gewicht (kg)</th>
+                    <th style="padding: 10px; text-align: right;">Preis</th>
+                    <th style="padding: 10px; text-align: center;">Aktionen</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in order.orderitem_set.all %}
+                <tr id="row-{{ item.id }}" style="border-bottom: 1px solid #dee2e6; {% if item.weight_kg > item.product_type.current_stock_kg %}color: red;{% endif %}">
+                    <td style="padding: 10px;">
+                        <input type="checkbox" name="completed_items" value="{{ item.id }}" {% if item.completed %}checked{% endif %} 
+                               onchange="updateItemStatus({{ item.id }}, this.checked)">
+                    </td>
+                    <td style="padding: 10px;">{{ item.product_type }}</td>
+                    <td style="padding: 10px; text-align: right;">
+                        <span id="weight-display-{{ item.id }}">{{ item.weight_kg }}</span>
+                        <input type="number" id="weight-edit-{{ item.id }}" 
+                               style="display: none; width: 80px;" 
+                               value="{{ item.weight_kg }}" step="0.01" min="0.01"
+                               max="{{ item.product_type.current_stock_kg|add:item.weight_kg }}"
+                               data-original-weight="{{ item.weight_kg }}"
+                               data-current-stock="{{ item.product_type.current_stock_kg }}">
+                        <div id="weight-error-{{ item.id }}" style="color: red; display: none; font-size: 12px;">Überschreitet Lagerbestand!</div>
+                    </td>
+                    <td style="padding: 10px; text-align: right;">{{ item.total_price|floatformat:2 }} €</td>
+                    <td style="padding: 10px; text-align: center;">
+                        <!-- Stift-Icon für Bearbeiten -->
+                        <i class="fas fa-edit edit-btn" id="edit-btn-{{ item.id }}"
+                            onclick="toggleEdit({{ item.id }})" style="margin-right: 15px; cursor: pointer; color: #0275d8;"></i>
+                        
+                        <!-- Häkchen-Icon für Speichern (anstelle des Buttons) -->
+                        <i class="fas fa-check save-btn" id="save-btn-{{ item.id }}"
+                            onclick="saveEdit({{ item.id }}, {{ order.id }})" 
+                            style="display: none; margin-right: 15px; cursor: pointer; color: #28a745;"></i>
+                        
+                        <!-- Mülleimer-Icon für Löschen -->
+                        <i class="fas fa-trash-alt delete-btn" 
+                            onclick="deleteItem({{ item.id }}, {{ order.id }})" style="margin-right: 15px; cursor: pointer; color: #d9534f;"></i>
+                        
+                        <!-- Neues Symbol - Grünes Häkchen für Seite neu laden -->
+                        <i class="fas fa-sync-alt refresh-btn"
+                            onclick="location.reload()" style="cursor: pointer; color: #28a745;"
+                            title="Seite neu laden"></i>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </form>
+    
+    <p>Gesamtpreis: <span id="total-price">{{ order.total_price|floatformat:2 }}</span> €</p>
+    
+    <script>
+        // JavaScript-Funktionen für die Bearbeitung von OrderItems
+        function toggleEdit(itemId) {
+            // Ein- und Ausblenden der Bearbeitungsfelder
+            const displayElem = document.getElementById(`weight-display-${itemId}`);
+            const editElem = document.getElementById(`weight-edit-${itemId}`);
+            const editBtn = document.getElementById(`edit-btn-${itemId}`);
+            const saveBtn = document.getElementById(`save-btn-${itemId}`);
+            const errorElem = document.getElementById(`weight-error-${itemId}`);
+            
+            displayElem.style.display = "none";
+            editElem.style.display = "inline";
+            editBtn.style.display = "none";
+            saveBtn.style.display = "inline";
+            errorElem.style.display = "none";
+            
+            // Event-Listener für die Validierung hinzufügen
+            editElem.addEventListener('input', function() {
+                validateWeight(itemId);
+            });
+        }
+        
+        function validateWeight(itemId) {
+            const editElem = document.getElementById(`weight-edit-${itemId}`);
+            const errorElem = document.getElementById(`weight-error-${itemId}`);
+            const saveBtn = document.getElementById(`save-btn-${itemId}`);
+            
+            const originalWeight = parseFloat(editElem.getAttribute('data-original-weight'));
+            const currentStock = parseFloat(editElem.getAttribute('data-current-stock'));
+            const newWeight = parseFloat(editElem.value);
+            
+            // Maximales erlaubtes Gewicht ist der aktuelle Lagerbestand plus das original gebuchte Gewicht
+            const maxWeight = currentStock + originalWeight;
+            
+            if (newWeight > maxWeight) {
+                errorElem.style.display = "block";
+                saveBtn.disabled = true;
+            } else {
+                errorElem.style.display = "none";
+                saveBtn.disabled = false;
+            }
+        }
+        
+        function saveEdit(itemId, orderId) {
+            const editElem = document.getElementById(`weight-edit-${itemId}`);
+            const newWeight = editElem.value;
+            
+            // Validierung vor dem Speichern durchführen
+            const originalWeight = parseFloat(editElem.getAttribute('data-original-weight'));
+            const currentStock = parseFloat(editElem.getAttribute('data-current-stock'));
+            
+            if (parseFloat(newWeight) > (currentStock + originalWeight)) {
+                alert('Nicht genug Lagerbestand verfügbar!');
+                return;
+            }
+            
+            // AJAX-Anfrage zum Aktualisieren des Gewichts
+            fetch(`/lager/orderitem/${itemId}/update/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                },
+                body: JSON.stringify({
+                    weight_kg: newWeight
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Aktualisiere die Anzeige
+                    const displayElem = document.getElementById(`weight-display-${itemId}`);
+                    const editElem = document.getElementById(`weight-edit-${itemId}`);
+                    const editBtn = document.getElementById(`edit-btn-${itemId}`);
+                    const saveBtn = document.getElementById(`save-btn-${itemId}`);
+                    const errorElem = document.getElementById(`weight-error-${itemId}`);
+                    
+                    displayElem.textContent = newWeight;
+                    displayElem.style.display = "inline";
+                    editElem.style.display = "none";
+                    editBtn.style.display = "inline";
+                    saveBtn.style.display = "none";
+                    errorElem.style.display = "none";
+                    
+                    // Daten aktualisieren
+                    editElem.setAttribute('data-original-weight', newWeight);
+                    editElem.setAttribute('data-current-stock', data.current_stock);
+                    
+                    // Gesamtpreis aktualisieren
+                    document.getElementById('total-price').textContent = data.total_price;
+                } else {
+                    alert('Fehler beim Aktualisieren: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Fehler:', error);
+                alert('Fehler bei der Verarbeitung der Anfrage.');
+            });
+        }
+        
+        // Andere Funktionen bleiben unverändert
+        function deleteItem(itemId, orderId) {
+            if (!confirm('Möchten Sie diesen Artikel wirklich löschen?')) {
+                return;
+            }
+            
+            // AJAX-Anfrage zum Löschen des Items
+            fetch(`/lager/orderitem/${itemId}/delete/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Element aus der DOM entfernen
+                    document.getElementById(`row-${itemId}`).remove();
+                    
+                    // Gesamtpreis aktualisieren
+                    document.getElementById('total-price').textContent = data.total_price;
+                } else {
+                    alert('Fehler beim Löschen: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Fehler:', error);
+                alert('Fehler bei der Verarbeitung der Anfrage.');
+            });
+        }
+        
+        function updateItemStatus(itemId, isChecked) {
+            // AJAX-Anfrage zum Aktualisieren des Status
+            fetch(`/lager/orderitem/${itemId}/toggle/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                },
+                body: JSON.stringify({
+                    completed: isChecked
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (!data.success) {
+                    alert('Fehler beim Aktualisieren des Status: ' + data.error);
+                    // Checkbox-Status zurücksetzen
+                    document.querySelector(`input[value="${itemId}"]`).checked = !isChecked;
+                }
+            })
+            .catch(error => {
+                console.error('Fehler:', error);
+                alert('Fehler bei der Verarbeitung der Anfrage.');
+            });
+        }
+        
+        // Verhindern des Standardverhaltens des Formulars
+        document.getElementById('orderItemsForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+        });
+        
+        // Neue Funktionen für Liefertermin und Status
+        function toggleDeliveryDateEdit() {
+            const displayElem = document.getElementById('delivery-date-display');
+            const editElem = document.getElementById('delivery-date-edit');
+            const editBtn = document.getElementById('edit-delivery-date-btn');
+            const saveBtn = document.getElementById('save-delivery-date-btn');
+            
+            displayElem.style.display = 'none';
+            editElem.style.display = 'inline';
+            editBtn.style.display = 'none';
+            saveBtn.style.display = 'inline';
+            
+            // Event-Listener für die Validierung hinzufügen
+            editElem.addEventListener('input', function() {
+                validateDeliveryDate();
+            });
+        }
+        
+        function validateDeliveryDate() {
+            const editElem = document.getElementById('delivery-date-edit');
+            const saveBtn = document.getElementById('save-delivery-date-btn');
+            
+            if (editElem.value === '') {
+                saveBtn.disabled = true;
+            } else {
+                saveBtn.disabled = false;
+            }
+        }
+        
+        function saveDeliveryDate(orderId) {
+            const editElem = document.getElementById('delivery-date-edit');
+            const newDeliveryDate = editElem.value;
+            
+            // URL korrigiert: von "/lager/order/" zu "/lager/orders/"
+            fetch(`/lager/orders/${orderId}/update-delivery-date/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                },
+                body: JSON.stringify({
+                    delivery_date: newDeliveryDate
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Aktualisiere die Anzeige
+                    const displayElem = document.getElementById('delivery-date-display');
+                    const editElem = document.getElementById('delivery-date-edit');
+                    const editBtn = document.getElementById('edit-delivery-date-btn');
+                    const saveBtn = document.getElementById('save-delivery-date-btn');
+                    
+                    displayElem.textContent = data.formatted_date || 'Nicht festgelegt';
+                    displayElem.style.display = 'inline';
+                    editElem.style.display = 'none';
+                    editBtn.style.display = 'inline';
+                    saveBtn.style.display = 'none';
+                } else {
+                    alert('Fehler beim Aktualisieren: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Fehler:', error);
+                alert('Fehler bei der Verarbeitung der Anfrage.');
+            });
+        }
+        
+        function toggleStatusEdit() {
+            const displayElem = document.getElementById('status-display');
+            const editElem = document.getElementById('status-edit');
+            const editBtn = document.getElementById('edit-status-btn');
+            const saveBtn = document.getElementById('save-status-btn');
+            
+            displayElem.style.display = 'none';
+            editElem.style.display = 'inline';
+            editBtn.style.display = 'none';
+            saveBtn.style.display = 'inline';
+        }
+        
+        function saveStatus(orderId) {
+            const editElem = document.getElementById('status-edit');
+            const newStatus = editElem.value;
+            
+            // URL korrigiert: von "/lager/order/" zu "/lager/orders/" und von "update_status" zu "update-status"
+            fetch(`/lager/orders/${orderId}/update-status/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                },
+                body: JSON.stringify({
+                    status: newStatus
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Aktualisiere die Anzeige
+                    const displayElem = document.getElementById('status-display');
+                    const editElem = document.getElementById('status-edit');
+                    const editBtn = document.getElementById('edit-status-btn');
+                    const saveBtn = document.getElementById('save-status-btn');
+                    
+                    displayElem.textContent = data.status_display;
+                    displayElem.style.display = 'inline';
+                    editElem.style.display = 'none';
+                    editBtn.style.display = 'inline';
+                    saveBtn.style.display = 'none';
+                } else {
+                    alert('Fehler beim Aktualisieren: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Fehler:', error);
+                alert('Fehler bei der Verarbeitung der Anfrage.');
+            });
+        }
+    </script>
 {% endblock %}

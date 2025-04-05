@@ -69,6 +69,7 @@ class OrderItem(models.Model):
     order = models.ForeignKey(Order, on_delete=models.CASCADE)
     product_type = models.ForeignKey(ProductType, on_delete=models.CASCADE)
     weight_kg = models.DecimalField(max_digits=10, decimal_places=2)
+    completed = models.BooleanField(default=False, verbose_name="Erledigt")
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
