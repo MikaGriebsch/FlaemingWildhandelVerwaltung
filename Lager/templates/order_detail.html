@@ -9,12 +9,12 @@
     <h1>Bestellung #{{ order.id }}</h1>
     
     <!-- Bearbeitung der Bestellungsinformationen -->
-    <div style="margin-bottom: 30px; padding: 20px; background-color: #f8f9fa; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-        <p>Kunde: {{ order.customer_name }}</p>
-        <p>Bestelldatum: {{ order.order_date|date:"d.m.Y H:i" }}</p>
+    <div style="margin-bottom: 30px; padding: 20px 40px 40px 40px; background-color: #f8f9fa; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+        <p><strong>Kunde:</strong> {{ order.customer_name }}</p>
+        <p><strong>Bestelldatum:</strong> {{ order.order_date|date:"d.m.Y H:i" }}</p>
         
         <!-- Liefertermin mit Bearbeitungsmöglichkeit -->
-        <div style="display: flex; align-items: center; margin-bottom: 10px;">
+        <div style="display: flex; align-items: center; margin-bottom: 20px;">
             <span><strong>Liefertermin:</strong></span>
             <span id="delivery-date-display" style="margin-left: 5px;">
                 {% if order.delivery_date %}{{ order.delivery_date|date:"d.m.Y" }}{% else %}Nicht festgelegt{% endif %}
@@ -45,7 +45,7 @@
         </div>
     </div>
     
-    <h3>Positionen:</h3>
+    <h3>Produkte:</h3>
     <form id="orderItemsForm" method="post"> <!-- Entfernung der action-URL -->
         {% csrf_token %}
         <table class="order-items-table" style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
@@ -53,7 +53,7 @@
                 <tr style="background-color: #f8f9fa; border-bottom: 2px solid #dee2e6;">
                     <th style="padding: 10px; text-align: left;">Erledigt</th>
                     <th style="padding: 10px; text-align: left;">Produkt</th>
-                    <th style="padding: 10px; text-align: right;">Gewicht (kg)</th>
+                    <th style="padding: 10px; text-align: right;">Gewicht</th>
                     <th style="padding: 10px; text-align: right;">Preis</th>
                     <th style="padding: 10px; text-align: center;">Aktionen</th>
                 </tr>
@@ -67,7 +67,7 @@
                     </td>
                     <td style="padding: 10px;">{{ item.product_type }}</td>
                     <td style="padding: 10px; text-align: right;">
-                        <span id="weight-display-{{ item.id }}">{{ item.weight_kg }}</span>
+                        <span id="weight-display-{{ item.id }}">{{ item.weight_kg }} kg</span>
                         <input type="number" id="weight-edit-{{ item.id }}" 
                                style="display: none; width: 80px;" 
                                value="{{ item.weight_kg }}" step="0.01" min="0.01"
